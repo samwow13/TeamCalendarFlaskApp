@@ -45,7 +45,11 @@
                         <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Create Administrator</button>
+                <div class="d-flex align-items-center">
+                    <button type="submit" class="btn btn-primary">Create Administrator</button>
+                    <span class="mx-3">Or</span>
+                    <button type="submit" class="btn btn-success" formaction="{{ url_for('admin.create_user') }}">Create User</button>
+                </div>
             </form>
         </div>
     </div>
@@ -108,6 +112,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.querySelector("form[action='{{ url_for('admin.create_admin') }}']")
         
+        // Handle password validation for both buttons
         form.addEventListener('submit', function(event) {
             // Prevent the form from submitting by default
             event.preventDefault();
@@ -120,6 +125,16 @@
             if (password !== confirmPassword) {
                 alert('Passwords do not match!');
                 return;
+            }
+            
+            // Determine which button was clicked
+            const clickedButton = document.activeElement;
+            
+            // If the Create User button was clicked, change the form action
+            if (clickedButton && clickedButton.formAction && clickedButton.formAction.includes('create_user')) {
+                form.action = "{{ url_for('admin.create_user') }}";
+            } else {
+                form.action = "{{ url_for('admin.create_admin') }}";
             }
             
             // If everything is valid, submit the form

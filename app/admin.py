@@ -94,6 +94,63 @@ def create_admin():
     
     return redirect(url_for('admin.list_users'))
 
+# Create new regular user
+@admin.route('/users/create_user', methods=['POST'])
+@login_required
+@admin_required
+def create_user():
+    """Create a new regular user"""
+    if request.method == 'POST':
+        # Get form data
+        username = request.form.get('username')
+        email = request.form.get('email')
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Validate form data
+        if not username or not email or not first_name or not last_name or not password:
+            flash('All fields are required.', 'danger')
+            return redirect(url_for('admin.list_users'))
+        
+        # Check if passwords match
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return redirect(url_for('admin.list_users'))
+        
+        # Check if username already exists
+        existing_username = User.query.filter_by(username=username).first()
+        if existing_username:
+            flash('Username already exists.', 'danger')
+            return redirect(url_for('admin.list_users'))
+        
+        # Check if email already exists
+        existing_email = User.query.filter_by(email=email).first()
+        if existing_email:
+            flash('Email already exists.', 'danger')
+            return redirect(url_for('admin.list_users'))
+        
+        # Create new regular user
+        new_user = User(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            password_hash=generate_password_hash(password),
+            color=User.generate_color(),
+            is_admin=False  # Not an admin
+        )
+        
+        # Add to database
+        db.session.add(new_user)
+        db.session.commit()
+        
+        flash(f'New user {first_name} {last_name} created successfully!', 'success')
+        return redirect(url_for('admin.list_users'))
+    
+    return redirect(url_for('admin.list_users'))
+
 @admin.route('/users/delete/<int:user_id>', methods=['POST'])
 @login_required
 @admin_required
