@@ -59,6 +59,40 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.start_time.label(class="form-label") }}
+                                <small class="text-muted d-block mb-2">Leave empty for a 24-hour event. If left empty, the event will last for 24 hours from the start date.</small>
+                                {% if form.start_time.errors %}
+                                    {{ form.start_time(class="form-control is-invalid timepicker", id="start_time") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.start_time.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.start_time(class="form-control timepicker", id="start_time") }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.end_time.label(class="form-label") }}
+                                <small class="text-muted d-block mb-2">Leave empty for a 24-hour event. If left empty, the event will last for 24 hours from the start time.</small>
+                                {% if form.end_time.errors %}
+                                    {{ form.end_time(class="form-control is-invalid timepicker", id="end_time") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.end_time.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.end_time(class="form-control timepicker", id="end_time") }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                     <div class="mb-3">
                         {{ form.description.label(class="form-label") }}
                         {% if form.description.errors %}
@@ -103,6 +137,37 @@
         const endDatePicker = flatpickr("#end_date", {
             dateFormat: "Y-m-d",
             allowInput: true
+        });
+        
+        // Initialize time pickers
+        const startTimePicker = flatpickr("#start_time", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            minuteIncrement: 15,
+            defaultHour: 9,
+            defaultMinute: 0,
+            onChange: function(selectedDates, timeStr) {
+                // When start time changes, check if end time should be updated
+                if (selectedDates.length > 0 && (!endTimePicker.selectedDates.length || 
+                    endTimePicker.selectedDates[0] <= selectedDates[0])) {
+                    // Set end time to 1 hour after start time by default
+                    const endTime = new Date(selectedDates[0]);
+                    endTime.setHours(endTime.getHours() + 1);
+                    endTimePicker.setDate(endTime);
+                }
+            }
+        });
+        
+        const endTimePicker = flatpickr("#end_time", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            minuteIncrement: 15,
+            defaultHour: 10,
+            defaultMinute: 0
         });
     });
 </script>

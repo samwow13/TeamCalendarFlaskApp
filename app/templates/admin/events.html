@@ -21,6 +21,7 @@
                             <th>Created By</th>
                             <th>Start Date</th>
                             <th>End Date</th>
+                            <th>Time</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -31,6 +32,13 @@
                             <td>{{ event.author.get_full_name() }}</td>
                             <td>{{ event.start_date.strftime('%Y-%m-%d') }}</td>
                             <td>{{ event.end_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if event.start_time and event.end_time %}
+                                    {{ event.start_time }} - {{ event.end_time }}
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </td>
                             <td>
                                 <form method="POST" action="{{ url_for('admin.delete_event', event_id=event.id) }}" class="d-inline">
                                     <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this event?');">Delete</button>

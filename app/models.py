@@ -19,6 +19,7 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(128))
     color = db.Column(db.String(20), nullable=False)  # Store the user's color
     is_admin = db.Column(db.Boolean, default=False)  # Admin flag
+    password_reset_required = db.Column(db.Boolean, default=False)  # Password reset flag
     events = db.relationship('Event', backref='author', lazy='dynamic')
     
     def set_password(self, password):
@@ -54,6 +55,8 @@ class Event(db.Model):
     title = db.Column(db.String(100), nullable=False)
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
+    start_time = db.Column(db.String(10), nullable=True)  # Store time as string (e.g., "13:00")
+    end_time = db.Column(db.String(10), nullable=True)  # Store time as string (e.g., "14:00")
     description = db.Column(db.Text)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -66,19 +69,46 @@ class Event(db.Model):
         # Store the original title for reference in the modal
         original_title = self.title
         
-        # Create a compact display title with format: "Title - Name"
-        display_title = f"{self.title} - {self.author.get_full_name()}"
+        # Create a display title with format that includes time if available
+        time_info = ""
+        if self.start_time and self.end_time:
+            time_info = f" ({self.start_time}-{self.end_time})"
         
-        return {
+        # Display title with format: "Title (time) - Name"
+        display_title = f"{self.title}{time_info} - {self.author.get_full_name()}"
+        
+        # Initialize the event dictionary
+        event_dict = {
             'id': self.id,
             'title': display_title,  # Use the compact display title for the calendar
             'original_title': original_title,  # Keep the original title for the modal
-            'start': self.start_date.strftime('%Y-%m-%d'),
-            'end': (self.end_date + timedelta(days=1)).strftime('%Y-%m-%d'),
             'description': self.description,
             'user_id': self.user_id,  # Use user_id instead of username for ownership checks
             'creator_name': self.author.get_full_name(),
+            'start_time': self.start_time,
+            'end_time': self.end_time,
             'backgroundColor': self.author.color,  # Add user's color to the event
             'borderColor': self.author.color,  # Match border color with background
-            'is_admin': False  # This will be overridden in JavaScript for admin users
         }
+        
+        # Handle event timing based on whether it has specific times or is all-day
+        if self.start_time and self.end_time:
+            # For events with specific times, create ISO datetime strings with timezone (YYYY-MM-DDTHH:MM:SS)
+            start_hour, start_minute = map(int, self.start_time.split(':'))
+            end_hour, end_minute = map(int, self.end_time.split(':'))
+            
+            # Create datetime objects with the time information
+            start_datetime = self.start_date.replace(hour=start_hour, minute=start_minute)
+            end_datetime = self.start_date.replace(hour=end_hour, minute=end_minute)
+            
+            # Format as ISO strings for FullCalendar
+            event_dict['start'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%S')
+            event_dict['end'] = end_datetime.strftime('%Y-%m-%dT%H:%M:%S')
+            event_dict['allDay'] = False
+        else:
+            # For all-day events, use date strings (YYYY-MM-DD)
+            event_dict['start'] = self.start_date.strftime('%Y-%m-%d')
+            event_dict['end'] = (self.end_date + timedelta(days=1)).strftime('%Y-%m-%d')  # Add one day for inclusive end date
+            event_dict['allDay'] = True
+        
+        return event_dict

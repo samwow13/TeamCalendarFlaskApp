@@ -8,6 +8,7 @@
     }
     #calendar {
         margin-top: 20px;
+        width: 100%; /* Fill the entire container-wider space */
     }
     .event-details {
         margin: 10px 0;
@@ -20,6 +21,45 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+    /* Reset all the custom width properties to let the calendar adjust naturally to the wider container */
+    .fc table {
+        width: 100% !important;
+    }
+    .fc .fc-scrollgrid-section-body,
+    .fc .fc-scrollgrid-section-header,
+    .fc-scrollgrid-sync-table,
+    .fc .fc-daygrid-body,
+    .fc .fc-timegrid-body {
+        width: 100% !important;
+    }
+    /* WEEK VIEW SPECIFIC STYLES - specifically scoped to timeGrid view only */
+    /* Show time labels in week view slot labels */
+    .fc-timeGridWeek-view .fc-timegrid-axis-cushion,
+    .fc-timeGridWeek-view .fc-timegrid-slot-label-cushion {
+        display: inline-block;
+        white-space: nowrap;
+    }
+    /* Allow week view all-day section to expand properly */
+    .fc-timeGridWeek-view .fc-timegrid-slot-minor {
+        border-top-style: none;
+    }
+    /* Ensure all-day section expands with multiple events in week view only */
+    .fc-timeGridWeek-view .fc-timegrid-allday-cushion {
+        max-height: none !important;
+    }
+    /* Stacking events properly in week view */
+    .fc-timeGridWeek-view .fc-timegrid-event {
+        position: relative;
+        z-index: 1;
+    }
+    /* All-day section auto-expand only in week view */
+    .fc-timeGridWeek-view .fc-daygrid-day-events {
+        min-height: auto !important;
+    }
+    /* Ensure proper time slot display in week view */
+    .fc-timeGridWeek-view .fc-timegrid-slot-label {
+        vertical-align: middle;
     }
     .admin-disabled-container {
         position: relative;
@@ -121,19 +161,102 @@
                 right: 'dayGridMonth,timeGridWeek,listMonth'
             },
             events: "{{ url_for('events.get_events') }}",
+            // Add configuration to properly display timed events in week view
+            slotDuration: '00:30:00',     // 30-minute slots
+            slotMinTime: '06:00:00',      // Start at 6am (updated from 8am)
+            slotMaxTime: '20:00:00',      // End at 8pm
+            allDaySlot: true,            // Show all-day slot
+            expandRows: true,             // Expand rows to fill available height
+            slotLabelFormat: {
+                hour: 'numeric',
+                minute: '2-digit',
+                omitZeroMinute: true,
+                meridiem: 'short'         // Use 12-hour format with AM/PM
+            },
+            // View-specific settings
+            views: {
+                timeGridWeek: {
+                    // Settings specific to week view
+                    allDaySlot: true,
+                    allDayText: 'All Day',
+                    dayHeaderFormat: { weekday: 'short', month: 'numeric', day: 'numeric' },
+                    // Ensure time labels are visible in 12-hour format
+                    slotLabelFormat: {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        omitZeroMinute: true,
+                        meridiem: 'short'  // Use 12-hour format with AM/PM
+                    }
+                },
+                dayGridMonth: {
+                    // Keep month view settings unchanged
+                }
+            },
+            // Handle event rendering with proper time display
+            eventTimeFormat: {        // Format for the time display in events
+                hour: 'numeric',
+                minute: '2-digit',
+                omitZeroMinute: true,
+                meridiem: 'short'      // Use 12-hour format with AM/PM
+            },
+            eventDidMount: function(info) {
+                // For timed events in time grid, make sure the time is visible
+                if (info.view.type === 'timeGridWeek' && info.event.extendedProps.start_time) {
+                    // Ensure time is displayed properly
+                    var startTime = info.event.extendedProps.start_time;
+                    var endTime = info.event.extendedProps.end_time;
+                    
+                    // If needed, enhance the display with additional information
+                    if (startTime && endTime) {
+                        // Time information can be accessed in event title if needed
+                    }
+                }
+            },
             eventClick: function(info) {
                 // Use the original title for the modal if available, otherwise use the display title
                 document.getElementById('eventTitle').textContent = info.event.extendedProps.original_title || info.event.title;
                 document.getElementById('eventAuthor').textContent = info.event.extendedProps.creator_name || 'Unknown';
                 
                 const startDate = new Date(info.event.start);
-                const endDate = new Date(info.event.end);
-                endDate.setDate(endDate.getDate() - 1); // Adjust for FullCalendar's inclusive end date
+                let endDate;
+                
+                if (info.event.end) {
+                    endDate = new Date(info.event.end);
+                    
+                    // Only adjust end date for all-day events (subtract one day)
+                    if (info.event.allDay) {
+                        endDate.setDate(endDate.getDate() - 1);
+                    }
+                } else {
+                    // If no end date is provided, use the start date
+                    endDate = new Date(startDate);
+                }
                 
                 const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-                const dateDisplay = startDate.toLocaleDateString(undefined, dateOptions) + 
-                                    (startDate.getTime() !== endDate.getTime() ? 
-                                    ' to ' + endDate.toLocaleDateString(undefined, dateOptions) : '');
+                let dateDisplay = '';
+                
+                if (info.event.allDay) {
+                    // For all-day events, just show the dates
+                    dateDisplay = startDate.toLocaleDateString(undefined, dateOptions) + 
+                                  (startDate.getTime() !== endDate.getTime() ? 
+                                  ' to ' + endDate.toLocaleDateString(undefined, dateOptions) : '');
+                } else {
+                    // For timed events, include the time
+                    const timeOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
+                    dateDisplay = startDate.toLocaleDateString(undefined, dateOptions) + 
+                                  ' ' + startDate.toLocaleTimeString(undefined, timeOptions);
+                    
+                    if (startDate.getTime() !== endDate.getTime()) {
+                        if (startDate.toDateString() === endDate.toDateString()) {
+                            // Same day, just add end time
+                            dateDisplay += ' to ' + endDate.toLocaleTimeString(undefined, timeOptions);
+                        } else {
+                            // Different days, add full date and time
+                            dateDisplay += ' to ' + endDate.toLocaleDateString(undefined, dateOptions) + 
+                                          ' ' + endDate.toLocaleTimeString(undefined, timeOptions);
+                        }
+                    }
+                }
                 
                 document.getElementById('eventDates').textContent = dateDisplay;
                 document.getElementById('eventDescription').textContent = info.event.extendedProps.description || 'No description provided.';

@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, SelectField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Length
-from wtforms.fields import DateField
+from wtforms.fields import DateField, TimeField
 from .models import User
 
 class LoginForm(FlaskForm):
@@ -23,6 +23,12 @@ class RegistrationForm(FlaskForm):
         if user:
             raise ValidationError('That email is already registered. Please use a different one.')
 
+class PasswordResetForm(FlaskForm):
+    """Form for resetting password after admin-triggered reset"""
+    password = PasswordField('New Password', validators=[DataRequired(), Length(min=8, max=64)])
+    confirm_password = PasswordField('Confirm New Password', validators=[DataRequired(), EqualTo('password', message='Passwords must match')])
+    submit = SubmitField('Set New Password')
+
 class EventForm(FlaskForm):
     event_type = SelectField('Event Type', choices=[
         ('OOO', 'Out of Office (OOO)'),
@@ -31,7 +37,9 @@ class EventForm(FlaskForm):
         ('PT', 'Personal Time (PT)')
     ], default='OOO')
     start_date = DateField('Start Date', validators=[DataRequired()], format='%Y-%m-%d')
+    start_time = TimeField('Start Time', format='%H:%M')
     end_date = DateField('End Date', validators=[DataRequired()], format='%Y-%m-%d')
+    end_time = TimeField('End Time', format='%H:%M')
     description = TextAreaField('Description (Optional)', render_kw={'placeholder': 'Enter additional details (optional)'})
     submit = SubmitField('Save Event')
     

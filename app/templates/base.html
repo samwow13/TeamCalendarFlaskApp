@@ -7,6 +7,16 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
+        /* Custom wider container - 30% wider than standard Bootstrap container */
+        .container-wider {
+            width: 130%;
+            max-width: 1550px; /* Standard container is 1200px, 130% is ~1560px */
+            margin-right: auto;
+            margin-left: auto;
+            padding-right: 15px;
+            padding-left: 15px;
+        }
+        
         /* Inline fallback styles for Teams colors */
         .bg-teams {
             background-color: #6264A7 !important; /* Primary Teams purple */
@@ -127,7 +137,7 @@
         </div>
     </nav>
 
-    <main class="container mt-4">
+    <main class="container-wider mt-4">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}

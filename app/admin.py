@@ -173,6 +173,30 @@ def delete_user(user_id):
     flash(f'User {user.get_full_name()} has been deleted.', 'success')
     return redirect(url_for('admin.list_users'))
 
+# Password reset functionality
+@admin.route('/users/reset_password/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def reset_user_password(user_id):
+    """Reset a user's password and flag for mandatory password change on next login"""
+    user = User.query.get_or_404(user_id)
+    
+    # Don't allow admin to reset their own password this way
+    if user.id == current_user.id:
+        flash('You cannot reset your own password using this feature.', 'danger')
+        return redirect(url_for('admin.list_users'))
+    
+    # Generate a temporary password
+    temp_password = 'TemporaryPassword123'  # Simple temporary password
+    
+    # Update user record
+    user.password_hash = generate_password_hash(temp_password)
+    user.password_reset_required = True  # Flag for mandatory password change
+    db.session.commit()
+    
+    flash(f'Password for {user.get_full_name()} has been reset. They will be required to set a new password on next login.', 'success')
+    return redirect(url_for('admin.list_users'))
+
 # Event management
 @admin.route('/events')
 @login_required
