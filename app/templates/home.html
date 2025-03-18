@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="jumbotron text-center p-5 bg-light rounded">
+    <h1 class="display-4">Welcome to ORKids Team Calendar</h1>
+    <p class="lead">Track team members' availability and out-of-office time in one central location.</p>
+    {% if not current_user.is_authenticated %}
+    <hr class="my-4">
+    <p>Sign in to view the team calendar or register for an account if you're new.</p>
+    <div class="d-flex justify-content-center gap-2">
+        <a class="btn btn-teams btn-lg" href="{{ url_for('auth.login') }}">Sign In</a>
+        <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('auth.register') }}">Register</a>
+    </div>
+    {% else %}
+    <a class="btn btn-teams btn-lg" href="{{ url_for('main.calendar') }}">View Calendar</a>
+    {% endif %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Track Time Off</h5>
+                <p class="card-text">Log your planned vacations, sick days, or personal time to keep your team informed.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">View Team Availability</h5>
+                <p class="card-text">See at a glance who's available on a given day and who's out of office.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Plan Better</h5>
+                <p class="card-text">Schedule meetings and deadlines with confidence knowing your team's availability.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block additional_head %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css' rel='stylesheet' />
+<style>
+    .fc-event {
+        cursor: pointer;
+    }
+    #calendar {
+        margin-top: 20px;
+    }
+    .event-details {
+        margin: 10px 0;
+        display: none;
+    }
+    /* Make calendar events more compact */
+    .fc-daygrid-event {
+        padding: 2px 4px;
+        font-size: 0.85em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .admin-disabled-container {
+        position: relative;
+    }
+    .admin-disabled-text {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        font-size: 0.8em;
+        color: #666;
+    }
+    .tooltip-container {
+        position: relative;
+    }
+    .tooltip-text {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        font-size: 0.8em;
+        color: #666;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        padding: 5px;
+        display: none;
+    }
+    .tooltip-container:hover .tooltip-text {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center">
+    <h1>Team Calendar</h1>
+    {% if not current_user.is_admin %}
+    <a href="{{ url_for('events.new_event') }}" class="btn btn-teams">Add Out-of-Office Time</a>
+    {% else %}
+    <!-- Disabled button for admin users with custom tooltip -->
+    <div class="tooltip-container">
+        <button class="btn btn-disabled" disabled>Add Out-of-Office Time</button>
+        <span class="tooltip-text">Disabled for Admin users</span>
+    </div>
+    {% endif %}
+</div>
+
+<div class="alert alert-info mt-3">
+    This calendar shows when team members are out of office. Click on an event to see details.
+    {% if current_user.is_admin %}
+    <br><strong>Note:</strong> As an administrator, you cannot add events but can view, edit, and delete them.
+    {% endif %}
+</div>
+
+<!-- Store user data in a hidden div to avoid template/JS issues -->
+<div id="user-data" 
+     data-user-id="{% if current_user.is_authenticated %}{{ current_user.id }}{% else %}0{% endif %}"
+     data-is-admin="{% if current_user.is_authenticated and current_user.is_admin %}true{% else %}false{% endif %}"
+     style="display: none;"></div>
+
+<div id="calendar"></div>
+
+<div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventTitle">Event Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Team Member:</strong> <span id="eventAuthor"></span></p>
+                <p><strong>Dates:</strong> <span id="eventDates"></span></p>
+                <p><strong>Description:</strong></p>
+                <p id="eventDescription"></p>
+            </div>
+            <div class="modal-footer" id="eventActions">
+                <!-- Action buttons will be added here dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js'></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var modal = new bootstrap.Modal(document.getElementById('eventModal'));
+        
+        // Get user data from the hidden div
+        var userData = document.getElementById('user-data');
+        var currentUserId = parseInt(userData.dataset.userId) || null;
+        var isAdmin = userData.dataset.isAdmin === 'true';
+        
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listMonth'
+            },
+            events: "{{ url_for('events.get_events') }}",
+            eventClick: function(info) {
+                // Use the original title for the modal if available, otherwise use the display title
+                document.getElementById('eventTitle').textContent = info.event.extendedProps.original_title || info.event.title;
+                document.getElementById('eventAuthor').textContent = info.event.extendedProps.creator_name || 'Unknown';
+                
+                const startDate = new Date(info.event.start);
+                const endDate = new Date(info.event.end);
+                endDate.setDate(endDate.getDate() - 1); // Adjust for FullCalendar's inclusive end date
+                
+                const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+                const dateDisplay = startDate.toLocaleDateString(undefined, dateOptions) + 
+                                    (startDate.getTime() !== endDate.getTime() ? 
+                                    ' to ' + endDate.toLocaleDateString(undefined, dateOptions) : '');
+                
+                document.getElementById('eventDates').textContent = dateDisplay;
+                document.getElementById('eventDescription').textContent = info.event.extendedProps.description || 'No description provided.';
+                
+                // Clear previous action buttons
+                const actionsDiv = document.getElementById('eventActions');
+                actionsDiv.innerHTML = '';
+                
+                // Add edit/delete buttons if current user is the author or is admin
+                // Compare as integers to ensure correct comparison
+                const eventUserId = parseInt(info.event.extendedProps.user_id);
+                if (eventUserId === currentUserId || isAdmin) {
+                    const editBtn = document.createElement('a');
+                    editBtn.className = 'btn btn-teams';
+                    editBtn.href = "/events/edit/" + info.event.id;
+                    editBtn.textContent = 'Edit';
+                    actionsDiv.appendChild(editBtn);
+                    
+                    const deleteForm = document.createElement('form');
+                    deleteForm.method = 'POST';
+                    deleteForm.action = "/events/delete/" + info.event.id;
+                    deleteForm.style.display = 'inline';
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.type = 'submit';
+                    deleteBtn.className = 'btn btn-danger ms-2';
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.onclick = function(e) {
+                        if (!confirm('Are you sure you want to delete this event?')) {
+                            e.preventDefault();
+                        }
+                    };
+                    
+                    deleteForm.appendChild(deleteBtn);
+                    actionsDiv.appendChild(deleteForm);
+                }
+                
+                modal.show();
+            }
+        });
+        
+        calendar.render();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ORKids Team Calendar{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Inline fallback styles for Teams colors */
+        .bg-teams {
+            background-color: #6264A7 !important; /* Primary Teams purple */
+        }
+        
+        .btn-teams {
+            background-color: #6264A7 !important;
+            border-color: #6264A7 !important;
+            color: white !important;
+        }
+        
+        /* Style for disabled buttons */
+        .btn-disabled {
+            background-color: #6c757d !important;
+            border-color: #6c757d !important;
+            color: white !important;
+            opacity: 0.65;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        /* Style for disabled nav items */
+        .nav-link-disabled {
+            color: rgba(255, 255, 255, 0.5) !important;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        /* Style for floating text on disabled Add Event button */
+        .admin-disabled-container {
+            position: relative;
+        }
+        
+        .admin-disabled-text {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+        
+        /* Style for tooltip */
+        .tooltip-container {
+            position: relative;
+        }
+        
+        .tooltip-text {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            font-size: 0.8em;
+            color: #6c757d;
+            visibility: hidden;
+        }
+        
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+        }
+    </style>
+    {% block additional_head %}{% endblock %}
+</head>
+<body>
+    <!-- Use both bg-dark and bg-teams to ensure the navbar is visible -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark bg-teams">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('main.home') }}">ORKids Team Calendar</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.home') }}">Home</a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.calendar') }}">Calendar</a>
+                    </li>
+                    {% if not current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('events.new_event') }}">Add Event</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item tooltip-container">
+                        <span class="nav-link nav-link-disabled">Add Event</span>
+                        <span class="tooltip-text">Disabled for Admin users</span>
+                    </li>
+                    {% endif %}
+                    {% if current_user.is_admin %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            Admin
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('admin.admin_dashboard') }}">Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.list_users') }}">Manage Users</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin.list_events') }}">Manage Events</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.register') }}">Register</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="mt-5 py-3 bg-light text-center">
+        <div class="container">
+            <p class="text-muted mb-0">ORKids Team Calendar App &copy; {{ now.year }}</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize all tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

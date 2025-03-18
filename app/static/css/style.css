@@ -1,0 +1,106 @@
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+.navbar {
+    margin-bottom: 20px;
+}
+
+/* Microsoft Teams colors */
+.bg-teams {
+    background-color: #6264A7 !important; /* Primary Teams purple */
+}
+
+.btn-teams {
+    background-color: #6264A7 !important;
+    border-color: #6264A7 !important;
+    color: white !important;
+}
+
+.btn-teams:hover {
+    background-color: #555AA7 !important;
+    border-color: #555AA7 !important;
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Updated event colors to match Teams style */
+.user-event {
+    background-color: #4B53BC !important; /* Teams blue */
+    border-color: #4B53BC !important;
+}
+
+.team-event {
+    background-color: #13A10E !important; /* Teams green */
+    border-color: #13A10E !important;
+}
+
+footer {
+    margin-top: auto;
+}
+
+/* Style for disabled buttons */
+.btn-disabled {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: white !important;
+    opacity: 0.65;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Style for disabled nav items */
+.nav-link-disabled {
+    color: rgba(255, 255, 255, 0.5) !important;
+    cursor: not-allowed;
+}
+
+/* Custom tooltip container */
+.tooltip-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Custom tooltip text */
+.tooltip-container .tooltip-text {
+    visibility: hidden;
+    width: 160px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: -30px;
+    left: 50%;
+    margin-left: -80px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+/* Show the tooltip text when hovering */
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Arrow for tooltip */
+.tooltip-container .tooltip-text::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent #555 transparent;
+}
